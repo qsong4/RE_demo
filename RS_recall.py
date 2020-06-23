@@ -38,6 +38,7 @@ class RS_recall(object):
         return inverIndex
 
     def recall(self, content):
+        # print(self.invertIndex)
         recall_list = []
         w_list = set(jieba.lcut(content))
         for w in w_list:
@@ -48,7 +49,7 @@ class RS_recall(object):
         return recall_list
 
 if __name__ == '__main__':
-    content = "我想要个少儿保险还有重疾险"
+    content = "我想要个少儿保险和重疾险"
     rs_recall = RS_recall()
     res = rs_recall.recall(content)
     print(res)
