@@ -1,20 +1,60 @@
 import os, sys
 import pandas as pd
 import random
+from tqdm import tqdm
 cur_dir = os.path.dirname(__file__)
+
+#合并用户数据以及保险数据
+def cmobine_userIns(ufile, insfile, clickfile, outfile):
+    #得到保险的字典
+    ins_dict = dict()
+    ins = pd.read_csv(insfile, sep="\t", header=0)
+    for index, row in ins.iterrows():
+        id = row["InsID"]
+        # ins_dict[id] = row.drop("InsID").tolist()
+        ins_dict[id] = [str(i) for i in row.tolist()]
+        # print(ins_dict)
+    #得到用户字典
+    user_dict = dict()
+    user = pd.read_csv(ufile, sep="\t", header=0)
+    for index, row in user.iterrows():
+        id = row["UID"]
+        # user_dict[id] = row.drop("ID").tolist()
+        user_dict[id] = [str(i) for i in row.tolist()]
+        # print(user_dict)
+
+    columns = ["ID"]+user.columns.values.tolist()+ins.columns.values.tolist()+["target"]
+    # print(len(columns))
+
+    with open(clickfile, 'r') as fr, open(outfile, 'w') as fw:
+        fw.write("\t".join(columns)+"\n")
+        i = 0
+        for line in tqdm(fr):
+
+            content = line.strip().split("\t")
+            uid = int(content[0])
+            insid = int(content[1])
+            isclick = content[2]
+            u_feats = user_dict[uid]
+            i_feats = ins_dict[insid]
+            # print(len(u_feats)+len(i_feats)+1)
+
+            fw.write(str(i)+"\t"+"\t".join(u_feats+i_feats)+"\t"+isclick+"\n")
+            i+=1
+
 
 #生成用户点选记录
 def user2ins(userfile, insfile, outfile):
     userfeats = pd.read_csv(userfile, sep="\t", header=0)
     insfeats = pd.read_csv(insfile, sep="\t", header=0)
     insID = insfeats['InsID'].tolist()
-    userID = userfeats['ID'].tolist()
+    userID = userfeats['UID'].tolist()
     with open(outfile, 'w') as fw:
         for index, row in userfeats.iterrows():
             #每个人可能买0~4个保险
             num_ins = random.randint(0, 4)
             _tmp = []
-            _uid = row['ID']
+            _uid = row['UID']
             for _ in range(num_ins):
                 pos_insid = insID[random.randint(0,len(insID)-1)]
                 if pos_insid not in _tmp:
@@ -28,12 +68,6 @@ def user2ins(userfile, insfile, outfile):
                     _tmp.append(neg_insid)
                     fw.write(f"{_uid}\t{neg_insid}\t0\n")
 
-
-
-
-
-
-
 # 生成用户信息
 def generate_user_info(infile, outfile):
     occ_map = {0:"室内工作",1:"室外工作",2:"高危职业",3:"退休", 4:"学生", 5:"其它", 6:"医生", 8:"农民",12:"程序员"}
@@ -44,7 +78,7 @@ def generate_user_info(infile, outfile):
     _shouru = ["低","中","高","0","0"]
     _daikuan = ["是", "否","0","0"]
 
-    columns = ["ID", "性别", "年龄", "收入", "职业", "出行方式", "生活习惯", "健康情况", "是否贷款", "已购保险类型"]
+    columns = ["UID", "性别", "年龄", "收入", "职业", "出行方式", "生活习惯", "健康情况", "是否贷款", "已购保险类型"]
 
     with open(infile, 'r') as fr, open(outfile, "w") as fw:
         fw.write("\t".join(columns) + "\n")
@@ -123,4 +157,5 @@ if __name__ == '__main__':
     # pre("./insurance_label.csv", "./rel_type.csv", "./insurance_feature.csv")
     # excel2csv("./doc/保险属性信息.xlsx", "./insurance_data.csv", columns=columns)
     # generate_user_info("./users_raw.csv", "./users_feats.csv")
-    user2ins("./users_feats.csv", "./insurance_data.csv", "./click.csv")
+    # user2ins("./users_feats.csv", "./insurance_data.csv", "./click.csv")
+    cmobine_userIns("./users_feats.csv", "./insurance_data.csv", "./click.csv", "combine_features.csv")
