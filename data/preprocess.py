@@ -42,6 +42,150 @@ def cmobine_userIns(ufile, insfile, clickfile, outfile):
             fw.write(str(i)+"\t"+"\t".join(u_feats+i_feats)+"\t"+isclick+"\n")
             i+=1
 
+def user2ins_plus(userfile, insfile, outfile):
+    userfeats = pd.read_csv(userfile, sep="\t", header=0)
+    insfeats = pd.read_csv(insfile, sep="\t", header=0)
+    insID_all = insfeats['InsID'].tolist()
+    price2ins = {}
+    work2ins = {}
+    type2ins = {}
+    age2ins = {}
+    for index, row in insfeats.iterrows():
+        insID = row["InsID"]
+        work = row["适用职业"]
+        type = row["类型"]
+        age = row["适合年龄"]
+        price = row["价格"]
+
+        if work in work2ins:
+            work2ins[work].append(insID)
+        else:
+            work2ins[work] = [insID]
+        if type in type2ins:
+            type2ins[type].append(insID)
+        else:
+            type2ins[type] = [insID]
+        if age in age2ins:
+            age2ins[age].append(insID)
+        else:
+            age2ins[age] = [insID]
+        if price in price2ins:
+            price2ins[price].append(insID)
+        else:
+            price2ins[price] = [insID]
+    print(price2ins)
+    print(work2ins)
+    print(type2ins)
+    print(age2ins)
+    with open(outfile, 'w') as fw:
+        for index, row in userfeats.iterrows():
+            _uid = row['UID']
+            gender = row['性别']
+            work = row["职业"]
+            chuxing = row["出行方式"]
+            age = row["年龄"]
+            shouru = row["收入"]
+            health = row["健康情况"]
+            shenghuo = row["生活习惯"]
+            _tmp = []
+            num_ins = 0
+            if gender == "女":
+                # pos_insid_list.append("17")
+                pos_insid = "17"
+                _tmp.append(pos_insid)
+                fw.write(f"{_uid}\t{pos_insid}\t1\n")
+
+            pos_insid_list_shouru = []
+            if "高" in shouru:
+                ins_list = price2ins["高"]
+                pos_insid_list_shouru = ins_list
+            if "中" in shouru:
+                ins_list = price2ins["中"]
+                pos_insid_list_shouru = ins_list
+            if "低" in shouru:
+                ins_list = price2ins["低"]
+                pos_insid_list_shouru = ins_list
+
+            pos_insid_list_work = []
+            if "高危" in work:
+                ins_list = work2ins["高危工作"]
+                pos_insid_list_work = ins_list
+            if "室外" in work:
+                ins_list = work2ins["室外工作"] + work2ins["室外工作|室内工作"] + work2ins["室外工作|室内工作|高危工作"]
+                pos_insid_list_work = ins_list
+            if "医生" in work:
+                ins_list = type2ins["意外险"]
+                pos_insid_list_work = ins_list
+
+            pos_insid_list_work = list(set(pos_insid_list_work) - set(pos_insid_list_shouru))
+            if len(pos_insid_list_work) > 0:
+                pos_insid = pos_insid_list_work[random.randint(0, len(pos_insid_list_work) - 1)]
+                fw.write(f"{_uid}\t{pos_insid}\t1\n")
+                _tmp.append(pos_insid)
+
+            pos_insid_list_age = []
+            if "幼儿" in age:
+                ins_list = age2ins["幼儿"]
+                pos_insid_list_age = ins_list
+            if "老年" in age:
+                ins_list = age2ins["老年"]
+                pos_insid_list_age = ins_list
+            if "青年" in age:
+                ins_list = age2ins["青年|中年"]
+                pos_insid_list_age = ins_list
+            if "中年" in age:
+                ins_list = age2ins["青年|中年|老年"]
+                pos_insid_list_age = ins_list
+
+            pos_insid_list_age = list(set(pos_insid_list_age) - set(pos_insid_list_shouru))
+            if len(pos_insid_list_age) > 0:
+                pos_insid = pos_insid_list_age[random.randint(0, len(pos_insid_list_age) - 1)]
+                fw.write(f"{_uid}\t{pos_insid}\t1\n")
+                _tmp.append(pos_insid)
+
+            pos_insid_list_chuxing = []
+            if "电动车" in chuxing or "常开车" in chuxing:
+                pos_insid_list_chuxing += [0,7,16,21,22]
+                pos_insid_list_chuxing = list(set(pos_insid_list_chuxing) - set(pos_insid_list_shouru))
+                pos_insid = pos_insid_list_chuxing[random.randint(0, len(pos_insid_list_chuxing) - 1)]
+                fw.write(f"{_uid}\t{pos_insid}\t1\n")
+                _tmp.append(pos_insid)
+
+            pos_insid_list_health = []
+            if "很健康" in health or "0" in health:
+                pos_insid_list_health = type2ins["年金险"]+type2ins["分红型"]+type2ins["定期寿险"]
+                pos_insid_list_health = list(set(pos_insid_list_health) - set(pos_insid_list_shouru))
+                pos_insid = pos_insid_list_health[random.randint(0, len(pos_insid_list_health) - 1)]
+                fw.write(f"{_uid}\t{pos_insid}\t1\n")
+                _tmp.append(pos_insid)
+
+            pos_insid_list_plus = []
+            if "中年" in age and shenghuo in ["常喝酒","睡觉晚","运动少","加班多"] and health in ["肠胃不好","颈椎不适","失眠"]:
+                pos_insid_list_plus = type2ins["医疗险"]+type2ins["重疾险"]
+                pos_insid = pos_insid_list_plus[random.randint(0, len(pos_insid_list_plus) - 1)]
+                fw.write(f"{_uid}\t{pos_insid}\t1\n")
+                _tmp.append(pos_insid)
+
+
+
+            num_ins = len(_tmp)
+            if num_ins == 0:
+                num_ins = random.randint(0, 4)
+                _tmp = []
+                _uid = row['UID']
+                for _ in range(num_ins):
+                    pos_insid = insID_all[random.randint(0, len(insID_all) - 1)]
+                    if pos_insid not in _tmp:
+                        _tmp.append(pos_insid)
+                        fw.write(f"{_uid}\t{pos_insid}\t1\n")
+
+            sub_insid = list(set(insID_all) - set(_tmp))
+            _tmp = []
+            for _ in range(num_ins*2):
+                neg_insid = sub_insid[random.randint(0,len(sub_insid)-1)]
+                if neg_insid not in _tmp:
+                    _tmp.append(neg_insid)
+                    fw.write(f"{_uid}\t{neg_insid}\t0\n")
 
 #生成用户点选记录
 def user2ins(userfile, insfile, outfile):
@@ -158,4 +302,5 @@ if __name__ == '__main__':
     # excel2csv("./doc/保险属性信息.xlsx", "./insurance_data.csv", columns=columns)
     # generate_user_info("./users_raw.csv", "./users_feats.csv")
     # user2ins("./users_feats.csv", "./insurance_data.csv", "./click.csv")
-    cmobine_userIns("./users_feats.csv", "./insurance_data.csv", "./click.csv", "combine_features.csv")
+    # user2ins_plus("./users_feats.csv", "./insurance_data.csv", "./click_plus.csv")
+    cmobine_userIns("./users_feats.csv", "./insurance_data.csv", "./click_plus.csv", "combine_features_plus.csv")

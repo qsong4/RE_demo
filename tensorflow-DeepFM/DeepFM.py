@@ -16,7 +16,7 @@ from tensorflow.contrib.layers.python.layers import batch_norm as batch_norm
 
 
 class DeepFM(BaseEstimator, TransformerMixin):
-    def __init__(self, feature_size, field_size,
+    def __init__(self, feature_size, field_size, model_path,
                  embedding_size=8, dropout_fm=[1.0, 1.0],
                  deep_layers=[32, 32], dropout_deep=[0.5, 0.5, 0.5],
                  deep_layers_activation=tf.nn.relu,
@@ -30,6 +30,8 @@ class DeepFM(BaseEstimator, TransformerMixin):
         assert (use_fm or use_deep)
         assert loss_type in ["logloss", "mse"], \
             "loss_type can be either 'logloss' for classification task or 'mse' for regression task"
+
+        self.model_path = model_path
 
         self.feature_size = feature_size        # denote as M, size of the feature dictionary
         self.field_size = field_size            # denote as F, size of the feature fields
@@ -169,6 +171,11 @@ class DeepFM(BaseEstimator, TransformerMixin):
             if self.verbose > 0:
                 print("#params: %d" % total_parameters)
 
+    def load_model(self, path=None):
+        with self.graph.as_default():
+            ckpt = tf.train.latest_checkpoint(path)
+            self.saver.restore(self.sess, ckpt)
+
     def save_model(self, path="./output/model.ckpt"):
         with self.graph.as_default():
             self.saver.save(self.sess, path)
@@ -260,7 +267,7 @@ class DeepFM(BaseEstimator, TransformerMixin):
 
 
     def fit(self, Xi_train, Xv_train, y_train,
-            Xi_valid=None, Xv_valid=None, y_valid=None,
+            Xi_valid=None, Xv_valid=None, y_valid=None, fold=None,
             early_stopping=False, refit=False):
         """
         :param Xi_train: [[ind1_1, ind1_2, ...], [ind2_1, ind2_2, ...], ..., [indi_1, indi_2, ..., indi_j, ...], ...]
@@ -283,6 +290,7 @@ class DeepFM(BaseEstimator, TransformerMixin):
             self.shuffle_in_unison_scary(Xi_train, Xv_train, y_train)
             total_batch = int(len(y_train) / self.batch_size)
             # print(total_batch)
+            best_res = 0.0
             for i in range(total_batch):
                 Xi_batch, Xv_batch, y_batch = self.get_batch(Xi_train, Xv_train, y_train, self.batch_size, i)
                 # print(Xi_batch)
@@ -295,6 +303,10 @@ class DeepFM(BaseEstimator, TransformerMixin):
             self.train_result.append(train_result)
             if has_valid:
                 valid_result = self.evaluate(Xi_valid, Xv_valid, y_valid)
+                if valid_result > best_res:
+                    print("NEW BEST MODEL SAVED")
+                    best_res = valid_result
+                    self.save_model(self.model_path %(fold, epoch, valid_result))
                 self.valid_result.append(valid_result)
             if self.verbose > 0 and epoch % self.verbose == 0:
                 if has_valid:
@@ -358,9 +370,11 @@ class DeepFM(BaseEstimator, TransformerMixin):
         # dummy y
         dummy_y = [1] * len(Xi)
         batch_index = 0
+        print(Xi)
         Xi_batch, Xv_batch, y_batch = self.get_batch(Xi, Xv, dummy_y, self.batch_size, batch_index)
         # print(Xi_batch)
         y_pred = None
+
         while len(Xi_batch) > 0:
             num_batch = len(y_batch)
             feed_dict = {self.feat_index: Xi_batch,
@@ -369,6 +383,7 @@ class DeepFM(BaseEstimator, TransformerMixin):
                          self.dropout_keep_fm: [1.0] * len(self.dropout_fm),
                          self.dropout_keep_deep: [1.0] * len(self.dropout_deep),
                          self.train_phase: False}
+            print(feed_dict)
             batch_out = self.sess.run(self.out, feed_dict=feed_dict)
             # print(batch_out)
             if batch_index == 0:

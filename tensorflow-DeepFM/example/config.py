@@ -5,6 +5,10 @@ TEST_FILE = "./data/test.csv"
 
 SUB_DIR = "./output"
 
+MODEL_PATH = "./output/DeepFMF%02dE%02dA%0.3f"
+MODEL_DIR = "./output"
+DF_FILE = "./data/fd.pickle"
+
 
 NUM_SPLITS = 2
 RANDOM_SEED = 2017
@@ -35,5 +39,5 @@ NUMERIC_COLS = [
 ]
 
 IGNORE_COLS = [
-    "InsID", "target", "ID", "关键词"
+    "InsID", "target", "ID", "关键词", "UID"
 ]
