@@ -1,6 +1,7 @@
 import jieba
 import numpy as np
 import math
+from tqdm import tqdm
 
 class RS_recall(object):
     def __init__(self):
@@ -15,8 +16,8 @@ class RS_recall(object):
     def _build_w2vec(self, w2v_data):
         embed = {}
         with open(w2v_data, 'r') as fr:
-            for line in fr:
-                row = line.strip().split(' ')
+            for line in tqdm(fr):
+                row = line.rstrip().split(' ')
                 if row[0] in embed.keys():
                     continue
                 else:

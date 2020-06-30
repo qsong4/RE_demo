@@ -78,16 +78,23 @@ class DeepFM(BaseEstimator, TransformerMixin):
             self.dropout_keep_deep = tf.placeholder(tf.float32, shape=[None], name="dropout_keep_deep")
             self.train_phase = tf.placeholder(tf.bool, name="train_phase")
 
-            self.weights = self._initialize_weights()
+            # self.weights = self._initialize_weights()
 
             # model
-            self.embeddings = tf.nn.embedding_lookup(self.weights["feature_embeddings"],
-                                                             self.feat_index)  # None * F * K
+            feature_embeddings = tf.get_variable('feature_embeddings',
+                                                 dtype=tf.float32,
+                                                 shape=(self.feature_size, self.embedding_size),
+                                                 initializer=tf.contrib.layers.xavier_initializer())
+            self.embeddings = tf.nn.embedding_lookup(feature_embeddings,self.feat_index)  # None * F * K
             feat_value = tf.reshape(self.feat_value, shape=[-1, self.field_size, 1])
             self.embeddings = tf.multiply(self.embeddings, feat_value)
 
             # ---------- first order term ----------
-            self.y_first_order = tf.nn.embedding_lookup(self.weights["feature_bias"], self.feat_index) # None * F * 1
+            feature_bias = tf.get_variable('feature_bias',
+                                                 dtype=tf.float32,
+                                                 shape=(self.feature_size, 1),
+                                                 initializer=tf.contrib.layers.xavier_initializer())
+            self.y_first_order = tf.nn.embedding_lookup(feature_bias, self.feat_index) # None * F * 1
             self.y_first_order = tf.reduce_sum(tf.multiply(self.y_first_order, feat_value), 2)  # None * F
             self.y_first_order = tf.nn.dropout(self.y_first_order, self.dropout_keep_fm[0]) # None * F
 
@@ -107,12 +114,18 @@ class DeepFM(BaseEstimator, TransformerMixin):
             # ---------- Deep component ----------
             self.y_deep = tf.reshape(self.embeddings, shape=[-1, self.field_size * self.embedding_size]) # None * (F*K)
             self.y_deep = tf.nn.dropout(self.y_deep, self.dropout_keep_deep[0])
+
+            self.y_deep = tf.layers.dense(self.y_deep, self.deep_layers[0], name="layer_ori")
             for i in range(0, len(self.deep_layers)):
-                self.y_deep = tf.add(tf.matmul(self.y_deep, self.weights["layer_%d" %i]), self.weights["bias_%d"%i]) # None * layer[i] * 1
-                if self.batch_norm:
-                    self.y_deep = self.batch_norm_layer(self.y_deep, train_phase=self.train_phase, scope_bn="bn_%d" %i) # None * layer[i] * 1
-                self.y_deep = self.deep_layers_activation(self.y_deep)
-                self.y_deep = tf.nn.dropout(self.y_deep, self.dropout_keep_deep[1+i]) # dropout at each Deep layer
+                self.y_deep = tf.layers.dense(self.y_deep, self.deep_layers[i], activation=tf.nn.relu, name="layer_%d"%i)
+                self.y_deep = tf.nn.dropout(self.y_deep, self.dropout_keep_deep[1 + i])  # dropout at each Deep layer
+
+            # for i in range(0, len(self.deep_layers)):
+            #     self.y_deep = tf.add(tf.matmul(self.y_deep, self.weights["layer_%d" %i]), self.weights["bias_%d"%i]) # None * layer[i] * 1
+            #     if self.batch_norm:
+            #         self.y_deep = self.batch_norm_layer(self.y_deep, train_phase=self.train_phase, scope_bn="bn_%d" %i) # None * layer[i] * 1
+            #     self.y_deep = self.deep_layers_activation(self.y_deep)
+            #     self.y_deep = tf.nn.dropout(self.y_deep, self.dropout_keep_deep[1+i]) # dropout at each Deep layer
 
             # ---------- DeepFM ----------
             if self.use_fm and self.use_deep:
@@ -121,7 +134,9 @@ class DeepFM(BaseEstimator, TransformerMixin):
                 concat_input = tf.concat([self.y_first_order, self.y_second_order], axis=1)
             elif self.use_deep:
                 concat_input = self.y_deep
-            self.out = tf.add(tf.matmul(concat_input, self.weights["concat_projection"]), self.weights["concat_bias"])
+
+            self.out = tf.layers.dense(concat_input, 1, name="layer_out")
+            # self.out = tf.add(tf.matmul(concat_input, self.weights["concat_projection"]), self.weights["concat_bias"])
 
             # loss
             if self.loss_type == "logloss":
@@ -130,13 +145,13 @@ class DeepFM(BaseEstimator, TransformerMixin):
             elif self.loss_type == "mse":
                 self.loss = tf.nn.l2_loss(tf.subtract(self.label, self.out))
             # l2 regularization on weights
-            if self.l2_reg > 0:
-                self.loss += tf.contrib.layers.l2_regularizer(
-                    self.l2_reg)(self.weights["concat_projection"])
-                if self.use_deep:
-                    for i in range(len(self.deep_layers)):
-                        self.loss += tf.contrib.layers.l2_regularizer(
-                            self.l2_reg)(self.weights["layer_%d"%i])
+            # if self.l2_reg > 0:
+            #     self.loss += tf.contrib.layers.l2_regularizer(
+            #         self.l2_reg)(self.weights["concat_projection"])
+            #     if self.use_deep:
+            #         for i in range(len(self.deep_layers)):
+            #             self.loss += tf.contrib.layers.l2_regularizer(
+            #                 self.l2_reg)(self.weights["layer_%d"%i])
 
             # optimizer
             if self.optimizer_type == "adam":
@@ -161,15 +176,15 @@ class DeepFM(BaseEstimator, TransformerMixin):
             self.sess.run(init)
 
             # number of params
-            total_parameters = 0
-            for variable in self.weights.values():
-                shape = variable.get_shape()
-                variable_parameters = 1
-                for dim in shape:
-                    variable_parameters *= dim.value
-                total_parameters += variable_parameters
-            if self.verbose > 0:
-                print("#params: %d" % total_parameters)
+            # total_parameters = 0
+            # for variable in self.weights.values():
+            #     shape = variable.get_shape()
+            #     variable_parameters = 1
+            #     for dim in shape:
+            #         variable_parameters *= dim.value
+            #     total_parameters += variable_parameters
+            # if self.verbose > 0:
+            #     print("#params: %d" % total_parameters)
 
     def load_model(self, path=None):
         with self.graph.as_default():

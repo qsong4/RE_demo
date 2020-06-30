@@ -94,7 +94,9 @@ if __name__ == '__main__':
     ins_feats = {"InsID":12,"保险名":"平安手机碎屏险（苹果版）","类型":"意外险","价格":"高","适合年龄":"幼儿|青年|中年|老年",
                  "保单形式":"电子|纸质","销售范围":"大陆","适用疾病":"0","适用职业":"0","缴费方式":"年缴|月缴|一次性","关键词":""}
     # res = pre.predict(users_feats, ins_feats)
-    res = pre.predict_plus("1", "24")
+    res = pre.predict_plus("2", "14")
+    print(res)
+    res = pre.predict_plus("2", "14")
     print(res)
 
 

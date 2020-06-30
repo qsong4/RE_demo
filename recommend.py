@@ -82,14 +82,16 @@ class Recommend(object):
         # 使用基于关键词的召回
         recall_res = self.kw_recall(content)
         # 关键词无法召回，使用基于向量的召回
-        if len(recall_res) == 0:
+        # if len(recall_res) == 0:
             # 召回不到也会默认返回5个
-            recall_res = self.vec_recall(content)
+            # recall_res = self.vec_recall(content)
         print("召回结果：")
         print(recall_res)
         #冷启动状态，使用基于内容的召回
         if uid == "unk" and uid not in self.userid_list:
             print("冷启动.....")
+            if len(recall_res) == 0:
+                recall_res = self.vec_recall(content, 5)
             return [(self.id2name[id], score) for id,score in recall_res]
         else:
             print("DeepFM Rank....")
@@ -105,8 +107,7 @@ class Recommend(object):
 if __name__ == '__main__':
     content = "针对老年人的保险"
     rs = Recommend()
-    res = rs.main_handle(uid="2", content=content
-
+    res = rs.main_handle(uid="2", content=content)
     print(res)
 
 
