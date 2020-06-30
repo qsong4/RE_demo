@@ -105,7 +105,8 @@ class Recommend(object):
 if __name__ == '__main__':
     content = "针对老年人的保险"
     rs = Recommend()
-    res = rs.main_handle(uid="2", content=content)
+    res = rs.main_handle(uid="2", content=content
+
     print(res)
 
 
