@@ -6,10 +6,10 @@ TEST_FILE = "./data/test.csv"
 SUB_DIR = "./output"
 
 MODEL_PATH = "./output/DeepFMF%02dE%02dA%0.3f"
-MODEL_DIR = "./output"
-DF_FILE = "./data/fd.pickle"
-USER_FILE = "../../data/users_feats.csv"
-INS_FILE = "../../data/insurance_data.csv"
+MODEL_DIR = "/output"
+DF_FILE = "/data/fd.pickle"
+USER_FILE = "/../../data/users_feats.csv"
+INS_FILE = "/../../data/insurance_data.csv"
 
 
 NUM_SPLITS = 2

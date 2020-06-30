@@ -3,7 +3,7 @@ A data parser for Porto Seguro's Safe Driver Prediction competition's dataset.
 URL: https://www.kaggle.com/c/porto-seguro-safe-driver-prediction
 """
 import pandas as pd
-
+# pd.set_option('max_colwidth', 200)
 
 class FeatureDictionary(object):
     def __init__(self, trainfile=None, testfile=None,
@@ -60,9 +60,9 @@ class DataParser(object):
         if has_label:
             y = dfi["target"].values.tolist()
             dfi.drop(["ID", "target"], axis=1, inplace=True)
-        else:
-            ids = dfi["ID"].values.tolist()
-            dfi.drop(["ID"], axis=1, inplace=True)
+        # else:
+        #     ids = dfi["ID"].values.tolist()
+        #     dfi.drop(["ID"], axis=1, inplace=True)
         # dfi for feature index
         # dfv for feature value which can be either binary (1/0) or float (e.g., 10.24)
         dfv = dfi.copy()
@@ -81,6 +81,7 @@ class DataParser(object):
 
                 dfv[col] = 1.
 
+
         # list of list of feature indices of each sample in the dataset
         Xi = dfi.values.tolist()
         # list of list of feature values of each sample in the dataset
@@ -88,5 +89,5 @@ class DataParser(object):
         if has_label:
             return Xi, Xv, y
         else:
-            return Xi, Xv, ids
+            return Xi, Xv, []
 
