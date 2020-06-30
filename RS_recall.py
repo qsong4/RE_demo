@@ -155,6 +155,7 @@ class RS_recall(object):
         w_list = self.find(content, self.ins_kw).values()
         print(w_list)
         for w in w_list:
+
             if w in self.invertIndex:
                 recall_list.extend(self.invertIndex[w])
             else:
