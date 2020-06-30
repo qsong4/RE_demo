@@ -2,11 +2,13 @@ import jieba
 import numpy as np
 import math
 from tqdm import tqdm
+from trie import Trie
 
 class RS_recall(object):
     def __init__(self):
         insurance_data = "./data/insurance_data.csv"
         w2v_data = "./data/w2v.txt"
+        self.ins_kw = Trie()
         self.invertIndex = self._build_invertIndex(insurance_data)
         self.w2v = self._build_w2vec(w2v_data)
         self.ins2v = self._build_ins2vec(insurance_data)
@@ -68,7 +70,8 @@ class RS_recall(object):
         inverIndex = {}
         for w in set_words:
             #jieba加入自定义词典
-            jieba.add_word(w)
+            # jieba.add_word(w, freq=100)
+            self.ins_kw.add(w)
             _n = []
             for k, v in _ins2feat.items():
                 if w in v:
@@ -113,10 +116,44 @@ class RS_recall(object):
         res = sorted(ins_res.items(), key=lambda item:item[1], reverse=True)
         return res[:topk]
 
+    def find(self, seg, kw):
+        res = {}
+        #res = []
+        pre = ""
+        count = 0
+        for i, word in enumerate(seg):
+            # print("pre: ", pre)
+            # print("startwith: ", kw.starts_with(pre))
+            # print("search: ", kw.search(pre))
+            if kw.starts_with(pre + word):
+                count += len(word)
+                pre += word
+            elif pre and kw.search(pre):
+                end = count
+                start = end - len(pre)
+                res[(start, end - 1)] = pre
+                #res.append(pre)
+                pre = word if kw.starts_with(word) else ''
+                count += len(word)
+                # pre = ''
+            # elif kw.starts_with(pre + word):
+            #     pre += word
+            else:
+                count += len(word)
+                pre = word if kw.starts_with(word) else ''
+        # print pre
+        if kw.search(pre):
+            res[(count - len(pre), count - 1)] = pre
+            #res.append(pre)
+        return res
+
     def recall(self, content, topk=5):
         # print(self.invertIndex)
+
         recall_list = []
-        w_list = set(jieba.lcut(content))
+        # w_list = set(jieba.lcut(content))
+        w_list = self.find(content, self.ins_kw).values()
+        print(w_list)
         for w in w_list:
             if w in self.invertIndex:
                 recall_list.extend(self.invertIndex[w])
@@ -126,10 +163,10 @@ class RS_recall(object):
         return recall_list[:topk]
 
 if __name__ == '__main__':
-    content = "有没有适合的"
+    content = "有没有好的医疗保险"
     rs_recall = RS_recall()
-    # res = rs_recall.recall(content)
-    res = rs_recall.vecRecall(content)
+    res = rs_recall.recall(content)
+    # res = rs_recall.vecRecall(content)
     print(res)
 
 

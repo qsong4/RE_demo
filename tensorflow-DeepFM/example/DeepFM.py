@@ -385,7 +385,7 @@ class DeepFM(BaseEstimator, TransformerMixin):
         # dummy y
         dummy_y = [1] * len(Xi)
         batch_index = 0
-        print(Xi)
+        # print(Xi)
         Xi_batch, Xv_batch, y_batch = self.get_batch(Xi, Xv, dummy_y, self.batch_size, batch_index)
         # print(Xi_batch)
         y_pred = None
@@ -398,7 +398,7 @@ class DeepFM(BaseEstimator, TransformerMixin):
                          self.dropout_keep_fm: [1.0] * len(self.dropout_fm),
                          self.dropout_keep_deep: [1.0] * len(self.dropout_deep),
                          self.train_phase: False}
-            print(feed_dict)
+            # print(feed_dict)
             batch_out = self.sess.run(self.out, feed_dict=feed_dict)
             # print(batch_out)
             if batch_index == 0:
