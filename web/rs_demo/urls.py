@@ -12,7 +12,7 @@ urlpatterns = [
     # Examples:
     # url(r'^$', 'classify.views.home', name='home'),
     # url(r'^blog/', include('blog.urls')),
-    url(r'^$',views.analyze, name='analyze'),
+    url(r'^rs',views.analyze, name='analyze'),
     url(r'^admin/', include(admin.site.urls)),
     url(r'static/(?P<path>.*)$','diango.views.static.serve',{'document_root':'/opt/xiaoxue.ma/NER/web_ner/static'})
 ]

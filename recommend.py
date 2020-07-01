@@ -93,7 +93,7 @@ class Recommend(object):
             print("冷启动.....")
             if len(recall_res) == 0:
                 recall_res = self.vec_recall(content, 5)
-            return [(self.id2name[id], score) for id,score in recall_res]
+            return [(self.id2name[id], np.float(score)) for id,score in recall_res]
         else:
             print("DeepFM Rank....")
             #如果前面召回失败，则用所有保险去计算
@@ -103,12 +103,12 @@ class Recommend(object):
             else:
                 recall_res = [id for id,_ in recall_res]
                 rank_res = self.deepfm_result(uid, recall_res)
-            return [(self.id2name[id], score) for id,score in rank_res]
+            return [(self.id2name[id], np.float(score)) for id,score in rank_res]
 
 if __name__ == '__main__':
     content = "保险推荐"
     rs = Recommend()
-    res = rs.main_handle(uid="1", content=content)
+    res = rs.main_handle(uid="2", content=content)
     print(res)
 
 
