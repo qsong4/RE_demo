@@ -1,5 +1,6 @@
 import os, sys
-cur_dir = os.path.dirname(__file__)
+# cur_dir = os.path.dirname(__file__)
+cur_dir = os.path.dirname( os.path.abspath(__file__)) or os.getcwd()
 sys.path.append(cur_dir + "/tensorflow-DeepFM/example/")
 from predict import dfm_predict
 from RS_recall import RS_recall
@@ -11,8 +12,8 @@ class Recommend(object):
     def __init__(self):
         self.deepfm_pre = dfm_predict()
         self.rs_recall = RS_recall()
-        insurance_data = "./data/insurance_data.csv"
-        user_data = "./data/users_feats.csv"
+        insurance_data = cur_dir + "/data/insurance_data.csv"
+        user_data = cur_dir + "/data/users_feats.csv"
         self.id2name = self._build_id2name(insurance_data)
         # print(self.id2name)
         self.userid_list = self._build_userid(user_data)
@@ -105,9 +106,9 @@ class Recommend(object):
             return [(self.id2name[id], score) for id,score in rank_res]
 
 if __name__ == '__main__':
-    content = "针对老年人的保险"
+    content = "保险推荐"
     rs = Recommend()
-    res = rs.main_handle(uid="2", content=content)
+    res = rs.main_handle(uid="1", content=content)
     print(res)
 
 

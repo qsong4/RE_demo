@@ -3,11 +3,13 @@ import numpy as np
 import math
 from tqdm import tqdm
 from trie import Trie
+import os,sys
+cur_dir = os.path.dirname( os.path.abspath(__file__)) or os.getcwd()
 
 class RS_recall(object):
     def __init__(self):
-        insurance_data = "./data/insurance_data.csv"
-        w2v_data = "./data/w2v.txt"
+        insurance_data = cur_dir + "/data/insurance_data.csv"
+        w2v_data = cur_dir + "/data/w2v.txt"
         self.ins_kw = Trie()
         self.invertIndex = self._build_invertIndex(insurance_data)
         self.w2v = self._build_w2vec(w2v_data)
