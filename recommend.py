@@ -7,6 +7,7 @@ from RS_recall import RS_recall
 import re
 import json
 import numpy as np
+os.environ["CUDA_VISIBLE_DEVICES"] = '-1'
 
 class Recommend(object):
     def __init__(self):
@@ -55,6 +56,23 @@ class Recommend(object):
         result = sorted(result.items(), key=lambda x:x[1], reverse=True)
         return result
 
+    def deepfm_result_2(self, uid, insids):
+        """
+        :param uid: 用户ID
+        :param insids: 保险ID [x,y,z]
+        :return: [(insid,score),()]有序的
+        """
+        result = {}
+        scores = self.deepfm_pre.predict_plus_plus(uid, insids)
+        for insid,score in zip(insids,scores):
+            #返回值为list
+            # print(uid)
+            # print(insid)
+
+            result[insid] = score
+        result = sorted(result.items(), key=lambda x:x[1], reverse=True)
+        return result
+
     def kw_recall(self, content):
         """
         关键词倒排索引召回
@@ -99,10 +117,12 @@ class Recommend(object):
             #如果前面召回失败，则用所有保险去计算
             if len(recall_res) == 0 or recall_res[0][1]==0.0:
                 recall_res = self.id2name.keys()
-                rank_res = self.deepfm_result(uid, recall_res)
+                # rank_res = self.deepfm_result(uid, recall_res)
+                rank_res = self.deepfm_result_2(uid, recall_res)#batch版本
             else:
                 recall_res = [id for id,_ in recall_res]
-                rank_res = self.deepfm_result(uid, recall_res)
+                # rank_res = self.deepfm_result(uid, recall_res)
+                rank_res = self.deepfm_result_2(uid, recall_res)#batch版本
             return [(self.id2name[id], np.float(score)) for id,score in rank_res]
 
 if __name__ == '__main__':

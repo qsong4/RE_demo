@@ -10,6 +10,8 @@ import config_pred as config
 from metrics import auc
 from DataReader import FeatureDictionary, DataParser
 from DeepFM import DeepFM
+import time
+
 dfm_params = {
     "use_fm": True,
     "use_deep": True,
@@ -86,6 +88,36 @@ class dfm_predict(object):
             return [0]
         return res
 
+    def predict_plus_plus(self, uID, insIDs):
+        ins_feats = []
+        users_feats = []
+        for insID in insIDs:
+            ins_feat = self.insfeats.loc[self.insfeats['InsID'].isin([insID])]
+            users_feat = self.userfeats.loc[self.userfeats['UID'].isin([uID])]
+            ins_feats.append(ins_feat)
+            users_feats.append(users_feat)
+            # print(ins_feats)
+        ins_feats = pd.concat(ins_feats)
+        users_feats = pd.concat(users_feats)
+        #若用户不存在,直接返回相似度为1
+        if users_feats.empty:
+            return [1]
+        #若保险不存在，返回相似度为0
+        if ins_feats.empty:
+            return [0]
+        ins_feats.index = range(len(ins_feats))
+        users_feats.index = range(len(users_feats))
+
+        dfTest = pd.concat([users_feats, ins_feats], axis=1)
+
+        Xi_test, Xv_test, y_test = self.data_parser.parse(df=dfTest, has_label=False)  # 测试集也是有label
+        try:
+            res = self.dfm.predict(Xi_test, Xv_test)
+        except:
+            print(f"数据中有nan:{Xi_test}")
+            return [0]
+        return res
+
 
 if __name__ == '__main__':
     pre = dfm_predict()
@@ -94,9 +126,20 @@ if __name__ == '__main__':
     ins_feats = {"InsID":12,"保险名":"平安手机碎屏险（苹果版）","类型":"意外险","价格":"高","适合年龄":"幼儿|青年|中年|老年",
                  "保单形式":"电子|纸质","销售范围":"大陆","适用疾病":"0","适用职业":"0","缴费方式":"年缴|月缴|一次性","关键词":""}
     # res = pre.predict(users_feats, ins_feats)
-    res = pre.predict_plus("2", "14")
-    print(res)
-    res = pre.predict_plus("2", "14")
+    # start = time.time()
+    # res = pre.predict_plus("2", "14")
+    # end = time.time()
+    # print(end-start)
+    # print(res)
+    # start = time.time()
+    # res = pre.predict_plus("2", "14")
+    # end = time.time()
+    # print(end-start)
+    # print(res)
+    start = time.time()
+    res = pre.predict_plus_plus("2", ["14","14","14"])
+    end = time.time()
+    print(end-start)
     print(res)
 
 
